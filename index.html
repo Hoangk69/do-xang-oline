@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đổ Xăng Online ⛽</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Be Vietnam Pro', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+    h1 { text-align: center; font-size: clamp(22px, 4vw, 36px); font-weight: 800; padding: 1.5rem 1rem 0.25rem; color: #fff; }
+    h1 span { color: #f97316; }
+    .sub { text-align: center; font-size: 14px; color: #94a3b8; margin-bottom: 1.5rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 0 12px 16px; max-width: 1100px; margin: 0 auto; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    .panel { background: #1e2235; border-radius: 16px; padding: 16px; border: 1px solid #2d3354; }
+    .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; color: #e2e8f0; }
+
+    /* Xe list */
+    .xe-list { display: flex; flex-direction: column; gap: 6px; max-height: 520px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2d3354 transparent; }
+    .xe-divider { font-size: 10px; font-weight: 700; color: #4c5380; text-transform: uppercase; letter-spacing: 1px; padding: 6px 4px 2px; }
+    .xe-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; border: 1.5px solid transparent; background: #252a3d; transition: all 0.15s; }
+    .xe-item:hover { background: #2d3354; border-color: #4c5380; }
+    .xe-item.active { background: #7c3aed; border-color: #a855f7; }
+    .xe-item.special.active { background: #831843; border-color: #ec4899; }
+    .xe-icon { font-size: 20px; width: 30px; text-align: center; flex-shrink: 0; }
+    .xe-info { flex: 1; }
+    .xe-name { font-size: 13px; font-weight: 700; color: #fff; }
+    .xe-desc { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+    .xe-tank { font-size: 12px; font-weight: 700; color: #f97316; margin-left: auto; flex-shrink: 0; }
+    .xe-item.active .xe-desc { color: #c4b5fd; }
+    .xe-item.active .xe-tank { color: #fde68a; }
+    .xe-item.special.active .xe-desc { color: #fbcfe8; }
+    .xe-item.special.active .xe-tank { color: #f9a8d4; }
+
+    /* Fuel list */
+    .fuel-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; min-height: 150px; }
+    .fuel-item { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 12px; cursor: pointer; border: 2px solid #2d3354; background: #252a3d; transition: all 0.15s; }
+    .fuel-item:hover { border-color: #4c5380; }
+    .fuel-item.active { background: #1d4ed8; border-color: #3b82f6; }
+    .fuel-item.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+    .fuel-icon { font-size: 24px; width: 32px; text-align: center; flex-shrink: 0; }
+    .fuel-name { font-size: 13px; font-weight: 700; color: #fff; flex: 1; }
+    .fuel-price { font-size: 14px; font-weight: 800; color: #fbbf24; white-space: nowrap; }
+    .fuel-item.active .fuel-price { color: #fff; }
+
+    /* Loading / error */
+    .fuel-loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 28px 12px; color: #64748b; font-size: 13px; }
+    .spinner { width: 18px; height: 18px; border: 2px solid #2d3354; border-top-color: #f97316; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fuel-error { background: #2d1515; border: 1px solid #7f1d1d; border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #fca5a5; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .retry-btn { margin-left: auto; background: #dc2626; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0; }
+    .retry-btn:hover { background: #b91c1c; }
+
+    /* Price timestamp */
+    .price-ts { font-size: 10px; color: #4c5380; text-align: right; margin-bottom: 8px; }
+    .price-ts.ok { color: #4ade80; }
+
+    /* Info box */
+    .info-box { background: #252a3d; border-radius: 10px; padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    .info-label { color: #94a3b8; }
+    .info-val { font-weight: 700; color: #e2e8f0; }
+    .info-val.accent { color: #3b82f6; }
+    .info-val.big { font-size: 22px; font-weight: 800; color: #fff; }
+    .info-val.money { color: #4ade80; font-size: 18px; font-weight: 800; }
+    .info-val.warn { color: #f472b6; font-weight: 700; font-size: 13px; }
+
+    /* Buttons */
+    .btn-row { display: flex; gap: 8px; }
+    .btn-main { flex: 1; padding: 13px; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; }
+    .btn-main.start { background: #16a34a; color: #fff; }
+    .btn-main.start:hover:not(:disabled) { background: #15803d; }
+    .btn-main.stop { background: #dc2626; color: #fff; animation: pulseRed 1.2s ease-in-out infinite; }
+    .btn-main.stop:hover { background: #b91c1c; }
+    .btn-main:active:not(:disabled) { transform: scale(0.97); }
+    .btn-main:disabled { background: #374151; color: #6b7280; cursor: not-allowed; animation: none; transform: none; }
+    @keyframes pulseRed { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
+    .btn-reset { padding: 13px 18px; background: #374151; color: #9ca3af; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .btn-reset:hover { background: #4b5563; color: #fff; }
+    .btn-reset:active { transform: scale(0.97); }
+
+    /* Tank */
+    .tank-wrap { position: relative; width: 120px; height: 180px; margin: 0 auto 12px; border-radius: 14px; background: #1a1f33; border: 2px solid #2d3354; overflow: hidden; }
+    .tank-fill { position: absolute; bottom: 0; left: 0; right: 0; height: 0%; background: linear-gradient(0deg,#ef4444,#f97316); transition: height 0.15s linear; border-radius: 0 0 12px 12px; }
+    .tank-fill.full { background: linear-gradient(0deg,#16a34a,#4ade80); }
+    .tank-fill.special { background: linear-gradient(0deg,#ec4899,#f9a8d4); }
+    .tank-pct-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: #fff; font-family: monospace; text-shadow: 0 1px 4px rgba(0,0,0,0.5); z-index: 2; }
+    .tank-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 14px; }
+    .tank-dot { width: 10px; height: 10px; border-radius: 50%; background: #2d3354; }
+    .tank-dot.on { background: #f97316; animation: dotPulse 0.8s ease-in-out infinite; }
+    @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* Xe display */
+    .xe-display { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 10px 10px; text-align: center; }
+    .xe-display .big-icon { font-size: 52px; line-height: 1; }
+    .xe-display .xe-nm { font-size: 15px; font-weight: 700; color: #fff; }
+    .xe-display .xe-ds { font-size: 12px; color: #94a3b8; }
+    .joke-msg { font-size: 12px; color: #f472b6; font-weight: 600; margin-top: 2px; padding: 0 8px; }
+    .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-top: 6px; }
+    .status-badge.idle    { background: #2d3354; color: #94a3b8; }
+    .status-badge.running { background: #14532d; color: #4ade80; }
+    .status-badge.paused  { background: #431407; color: #fb923c; }
+    .status-badge.done    { background: #1e3a5f; color: #60a5fa; }
+    .status-badge.joke    { background: #4a1942; color: #f472b6; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .running .dot { animation: blink 0.7s infinite; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* Footer */
+    .footer { text-align: center; padding: 0.5rem 1rem 1.5rem; font-size: 12px; color: #4c5380; }
+    .update-badge { display: inline-block; background: #1e2235; border: 1px solid #2d3354; border-radius: 20px; padding: 4px 14px; margin-top: 6px; font-size: 11px; color: #64748b; }
+  </style>
+</head>
+<body>
+
+  <h1><span>⛽</span> Đổ Xăng Online</h1>
+  <p class="sub">Xăng đắt quá, đổ online cho đỡ tốn! 😄</p>
+
+  <div class="grid">
+    <!-- COL 1: Xe -->
+    <div class="panel">
+      <div class="panel-title"><span>🛵</span> Chọn phương tiện</div>
+      <div class="xe-list" id="xe-list"></div>
+    </div>
+
+    <!-- COL 2: Xăng -->
+    <div class="panel">
+      <div class="panel-title"><span>💧</span> Chọn loại xăng</div>
+      <div class="price-ts" id="price-ts">⏳ Đang tải giá từ Petrolimex...</div>
+      <div class="fuel-list" id="fuel-list">
+        <div class="fuel-loading"><div class="spinner"></div> Đang kết nối...</div>
+      </div>
+      <div class="info-box">
+        <div class="info-row"><span class="info-label">Xe đang chọn:</span><span class="info-val accent" id="inf-xe">Air Blade</span></div>
+        <div class="info-row"><span class="info-label">Dung tích bình:</span><span class="info-val accent" id="inf-tank">5.5 lít</span></div>
+        <div class="info-row"><span class="info-label">Số lít đã đổ:</span><span class="info-val big" id="inf-lit">0.00 L</span></div>
+        <div class="info-row"><span class="info-label">$ Tổng tiền:</span><span class="info-val money" id="inf-money">0đ</span></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-main start" id="btn-main" onclick="togglePump()" disabled>⏳ Đang tải giá...</button>
+        <button class="btn-reset" onclick="resetPump()">Reset</button>
+      </div>
+    </div>
+
+    <!-- COL 3: Trạm xăng -->
+    <div class="panel">
+      <div class="panel-title"><span>⛽</span> Trạm xăng</div>
+      <div class="tank-wrap">
+        <div class="tank-fill" id="tank-fill"></div>
+        <div class="tank-pct-text" id="tank-pct">0%</div>
+      </div>
+      <div class="tank-dots">
+        <div class="tank-dot" id="dot1"></div>
+        <div class="tank-dot" id="dot2"></div>
+        <div class="tank-dot" id="dot3"></div>
+      </div>
+      <div class="xe-display">
+        <div class="big-icon" id="disp-icon">🛵</div>
+        <div class="xe-nm" id="disp-name">Air Blade</div>
+        <div class="xe-ds" id="disp-desc">Xe tay ga phổ thông</div>
+        <div class="joke-msg" id="joke-msg" style="display:none"></div>
+        <div class="status-badge idle" id="status-badge"><span class="dot"></span><span id="status-txt">Chờ bắt đầu</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    💡 Mẹo: Đây chỉ là web giải trí, xăng thật vẫn phải ra trạm đổ nhé!
+    <br /><span class="update-badge" id="footer-badge">⏱ Nguồn: API giaxanghomnay.com — Huy Hoàng Man</span>
+  </div>
+
+  <script>
+    // ── XE DATA ────────────────────────────────────────────────────
+    const xeData = [
+      { group: 'Xe tay ga Honda', name: 'Air Blade',  desc: 'Xe tay ga phổ thông',  tank: 5.5,  icon: '🛵' },
+      { group: null,              name: 'Vision',      desc: 'Xe tay ga nhỏ gọn',    tank: 5.2,  icon: '🛵' },
+      { group: null,              name: 'SH Mode',     desc: 'Xe tay ga cao cấp',    tank: 5.5,  icon: '🛵' },
+      { group: null,              name: 'SH 150i',     desc: 'Xe tay ga sang chảnh', tank: 7.1,  icon: '🛵' },
+      { group: null,              name: 'Lead 125',    desc: 'Xe tay ga thanh lịch', tank: 6.0,  icon: '🛵' },
+      { group: null,              name: 'Vario 160',   desc: 'Xe tay ga thể thao',   tank: 5.5,  icon: '🛵' },
+      { group: null,              name: 'Janus',       desc: 'Xe tay ga nữ tính',    tank: 4.2,  icon: '🛵' },
+      { group: 'Xe số & côn',    name: 'NVX 155',     desc: 'Xe tay ga mạnh mẽ',    tank: 6.6,  icon: '🏍️' },
+      { group: null,              name: 'Winner X',    desc: 'Xe số thể thao',       tank: 4.5,  icon: '🏍️' },
+      { group: null,              name: 'Wave Alpha',  desc: 'Xe số tiết kiệm',      tank: 3.7,  icon: '🏍️' },
+      { group: null,              name: 'Wave RSX',    desc: 'Xe số trẻ trung',      tank: 3.7,  icon: '🏍️' },
+      { group: null,              name: 'Sirius',      desc: 'Xe số bền bỉ',         tank: 4.2,  icon: '🏍️' },
+      { group: null,              name: 'Future 125',  desc: 'Xe số bền bỉ',         tank: 4.0,  icon: '🏍️' },
+      { group: null,              name: 'Exciter 155', desc: 'Xe côn tay đua',       tank: 5.4,  icon: '🏍️' },
+      { group: null,              name: 'Raider 150',  desc: 'Xe côn tay Suzuki',    tank: 5.0,  icon: '🏍️' },
+      { group: 'Ô tô',           name: 'Toyota Vios', desc: 'Sedan phổ thông',      tank: 42.0, icon: '🚗' },
+      { group: null,              name: 'Hyundai i10', desc: 'Hatchback cỡ nhỏ',    tank: 35.0, icon: '🚗' },
+      { group: null,              name: 'Ô tô',        desc: 'Xe hơi 4 bánh',        tank: 50.0, icon: '🚗' },
+      { group: null,              name: 'Ford Ranger', desc: 'Bán tải mạnh mẽ',     tank: 80.0, icon: '🚙' },
+      { group: 'Đặc biệt 😄',   name: 'Xe đạp', desc: 'Chạy bằng cơm, không cần xăng 😄', tank: null, icon: '🚲', special: true, joke: '🚴 Xe đạp chạy bằng cơm thôi bạn ơi!' },
+    ];
+
+    // ── FUEL CONFIG ─────────────────────────────────────────────────
+    // Các loại xăng muốn hiển thị — filter theo title từ API
+    // Lấy zone1_price (Vùng 1 — Hà Nội, TP.HCM)
+    const FUEL_CONFIG = [
+      { title: 'Xăng RON 95-III', icon: '⛽' },
+      { title: 'Xăng E5 RON 92-II', icon: '🔥' },
+      { title: 'DO 0,05S-II',      icon: '🪣' },
+    ];
+
+    const FALLBACK_FUELS = [
+      { name: 'Xăng RON 95-III', price: 24330, icon: '⛽' },
+      { name: 'Xăng E5 RON 92-II', price: 28070, icon: '🔥' },
+      { name: 'DO 0,05S-II',       price: 37890, icon: '🪣' },
+    ];
+
+    let fuels = [];
+    let selXe = 0, selFuel = 0, pumpRunning = false, pumpTimer = null, curPct = 0, isFull = false;
+
+    // ── FETCH GIÁ XĂNG ──────────────────────────────────────────────
+    function getTodayDate() {
+      // Trả về chuỗi YYYY-MM-DD theo giờ local
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm   = String(d.getMonth() + 1).padStart(2, '0');
+      const dd   = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    /**
+     * API trả về mảng nhiều chiều:
+     * [ [petrolimex items...], [other items...], [prev day petrolimex...], ... ]
+     *
+     * Mỗi item có: { title, zone1_price, zone2_price, ... }
+     * hoặc dạng không có zone: { title, price }
+     *
+     * Flatten toàn bộ → filter theo title trong FUEL_CONFIG → lấy zone1_price (ưu tiên)
+     * Chọn item mới nhất (date gần nhất với hôm nay) khi có trùng title
+     */
+    function parseFuelData(data, today) {
+      // Flatten mảng lồng nhau (response là array of arrays)
+      const allItems = [].concat(...data);
+
+      const result = [];
+      for (const cfg of FUEL_CONFIG) {
+        // Tìm tất cả items có title khớp
+        const matches = allItems.filter(item =>
+          item.title && item.title.trim() === cfg.title
+        );
+
+        if (matches.length === 0) continue;
+
+        // Ưu tiên item có date = hôm nay, nếu không lấy item đầu tiên
+        const todayMatch = matches.find(item =>
+          item.date && item.date.startsWith(today)
+        );
+        const best = todayMatch || matches[0];
+
+        // Lấy zone1_price nếu có, fallback sang price
+        const price = best.zone1_price ?? best.price ?? null;
+        if (!price) continue;
+
+        result.push({
+          name:  cfg.title,
+          price: Math.round(price),
+          icon:  cfg.icon,
+        });
+      }
+      return result;
+    }
+
+    async function loadFuelPrices() {
+      const listEl   = document.getElementById('fuel-list');
+      const tsEl     = document.getElementById('price-ts');
+      const footerEl = document.getElementById('footer-badge');
+
+      listEl.innerHTML = `<div class="fuel-loading"><div class="spinner"></div> Đang lấy giá từ Petrolimex...</div>`;
+      tsEl.textContent = '⏳ Đang tải giá...';
+      tsEl.className = 'price-ts';
+
+      const today = getTodayDate(); // YYYY-MM-DD
+      const apiUrl = `https://giaxanghomnay.com/api/pvdate/${today}`;
+
+      try {
+        const res = await fetch(apiUrl, { signal: AbortSignal.timeout(10000) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        const items = parseFuelData(data, today);
+
+        if (items.length > 0) {
+          fuels = items;
+          const now = new Date().toLocaleString('vi-VN', {
+            hour: '2-digit', minute: '2-digit',
+            day: '2-digit', month: '2-digit', year: 'numeric'
+          });
+          tsEl.textContent = `✅ Call API thành công — giaxanghomnay.com`;
+          tsEl.className = 'price-ts ok';
+          footerEl.textContent = `⏱ Cập nhật lúc ${now} — giaxanghomnay.com (Huy Hoàng Man)`;
+        } else {
+          throw new Error('Không tìm thấy loại xăng cần thiết trong response');
+        }
+
+      } catch (err) {
+        console.error('[API] Lỗi fetch giá xăng:', err.message);
+        fuels = FALLBACK_FUELS;
+        tsEl.textContent = `⚠️ Dùng giá dự phòng (${getTodayDate()})`;
+        tsEl.className = 'price-ts';
+        listEl.innerHTML = `
+          <div class="fuel-error">
+            ⚠️ Không lấy được giá mới. Đang dùng giá dự phòng.
+            <button class="retry-btn" onclick="loadFuelPrices()">🔄 Thử lại</button>
+          </div>`;
+        await new Promise(r => setTimeout(r, 1500));
+      }
+
+      renderFuel();
+      if (!isSpecial() && !isFull) updateBtn();
+    }
+
+    // ── HELPERS ─────────────────────────────────────────────────────
+    const fmt = n => Math.round(n).toLocaleString('vi-VN') + 'đ';
+    const isSpecial = () => !!xeData[selXe].special;
+
+    // ── RENDER ──────────────────────────────────────────────────────
+    function renderXe() {
+      let html = '', lastGroup = undefined;
+      xeData.forEach((x, i) => {
+        if (x.group != null && x.group !== lastGroup) {
+          html += `<div class="xe-divider">${x.group}</div>`;
+          lastGroup = x.group;
+        } else if (x.group === null && lastGroup === undefined) lastGroup = null;
+        html += `<div class="xe-item${i===selXe?' active':''}${x.special?' special':''}" onclick="selectXe(${i})">
+          <div class="xe-icon">${x.icon}</div>
+          <div class="xe-info"><div class="xe-name">${x.name}</div><div class="xe-desc">${x.desc}</div></div>
+          <div class="xe-tank">${x.tank!=null?x.tank+'L':'—'}</div>
+        </div>`;
+      });
+      document.getElementById('xe-list').innerHTML = html;
+    }
+
+    function renderFuel() {
+      if (!fuels.length) return;
+      const sp = isSpecial();
+      document.getElementById('fuel-list').innerHTML = fuels.map((f, i) => `
+        <div class="fuel-item${i===selFuel&&!sp?' active':''}${sp?' disabled':''}" onclick="selectFuel(${i})">
+          <div class="fuel-icon">${f.icon}</div>
+          <div class="fuel-name">${f.name}</div>
+          <div class="fuel-price">${fmt(f.price)}/L</div>
+        </div>`).join('');
+    }
+
+    function setDots(on) {
+      ['dot1','dot2','dot3'].forEach(id => document.getElementById(id).className = 'tank-dot'+(on?' on':''));
+    }
+    function setStatus(cls, txt) {
+      document.getElementById('status-badge').className = 'status-badge '+cls;
+      document.getElementById('status-txt').textContent = txt;
+    }
+    function setTankVisual(pct) {
+      const fill = document.getElementById('tank-fill');
+      fill.style.height = pct + '%';
+      fill.className = 'tank-fill'+(isSpecial()?' special':pct>=100?' full':'');
+      document.getElementById('tank-pct').textContent = Math.round(pct)+'%';
+    }
+    function updateBtn() {
+      const btn = document.getElementById('btn-main');
+      const sp = isSpecial();
+      if (sp)            { btn.className='btn-main start'; btn.innerHTML='⛽ Bắt đầu đổ';     btn.disabled=true;  return; }
+      if (!fuels.length) { btn.className='btn-main start'; btn.innerHTML='⏳ Đang tải giá...'; btn.disabled=true;  return; }
+      if (isFull)        { btn.className='btn-main start'; btn.innerHTML='✅ Đã đầy bình';     btn.disabled=true;  return; }
+      if (pumpRunning)   { btn.className='btn-main stop';  btn.innerHTML='⚡ Dừng đổ';         btn.disabled=false; }
+      else               { btn.className='btn-main start'; btn.innerHTML='⛽ Bắt đầu đổ';     btn.disabled=false; }
+    }
+    function updateInfo() {
+      const xe = xeData[selXe]; const sp = isSpecial();
+      document.getElementById('inf-xe').textContent = xe.name;
+      const t = document.getElementById('inf-tank');
+      if (sp) { t.className='info-val warn';   t.textContent='Không có bình xăng 😄'; }
+      else    { t.className='info-val accent';  t.textContent=xe.tank+' lít'; }
+      document.getElementById('disp-icon').textContent = xe.icon;
+      document.getElementById('disp-name').textContent = xe.name;
+      document.getElementById('disp-desc').textContent = xe.desc;
+      const j = document.getElementById('joke-msg');
+      if (sp && xe.joke) { j.textContent=xe.joke; j.style.display='block'; }
+      else j.style.display='none';
+      if (!pumpRunning) {
+        if (sp)      setStatus('joke','Không cần xăng 😄');
+        else if (isFull) setStatus('done','✅ Đã đầy bình!');
+        else         setStatus('idle','Chờ bắt đầu');
+        setDots(false);
+      }
+      updateBtn();
+    }
+
+    // ── ACTIONS ─────────────────────────────────────────────────────
+    function selectXe(i) {
+      if (pumpRunning) return;
+      selXe=i; curPct=0; isFull=false;
+      document.getElementById('inf-lit').textContent='0.00 L';
+      document.getElementById('inf-money').textContent='0đ';
+      setTankVisual(0);
+      renderXe(); renderFuel(); updateInfo();
+    }
+    function selectFuel(i) {
+      if (pumpRunning || isSpecial()) return;
+      selFuel=i; renderFuel();
+    }
+    function togglePump() {
+      if (isSpecial() || isFull) return;
+      if (pumpRunning) stopPump(); else startPump();
+    }
+    function startPump() {
+      if (pumpRunning || isSpecial() || isFull || !fuels.length) return;
+      const xe=xeData[selXe], fuel=fuels[selFuel];
+      const totalLit=xe.tank, totalMoney=totalLit*fuel.price;
+      if (!totalLit || totalLit<=0) return;
+
+      pumpRunning=true; updateBtn();
+      setStatus('running','Đang đổ xăng...'); setDots(true);
+
+      const duration=Math.min(Math.max(totalLit*200,2500),9000);
+      const interval=60, totalSteps=duration/interval;
+      const startPct=curPct;
+      const remainSteps=Math.max(1, Math.round(totalSteps*(1-startPct/100)));
+      let step=0;
+
+      pumpTimer=setInterval(()=>{
+        step++;
+        curPct=Math.min(100, startPct+(100-startPct)*(step/remainSteps));
+        setTankVisual(curPct);
+        document.getElementById('inf-lit').textContent=(totalLit*curPct/100).toFixed(2)+' L';
+        document.getElementById('inf-money').textContent=fmt(totalMoney*curPct/100);
+        if (curPct>=100) {
+          clearInterval(pumpTimer);
+          pumpRunning=false; isFull=true; curPct=100;
+          setDots(false); setStatus('done','✅ Đã đầy bình!');
+          document.getElementById('inf-lit').textContent=totalLit.toFixed(2)+' L';
+          document.getElementById('inf-money').textContent=fmt(totalMoney);
+          updateBtn();
+        }
+      },interval);
+    }
+    function stopPump() {
+      if (!pumpRunning) return;
+      clearInterval(pumpTimer); pumpRunning=false;
+      setDots(false); setStatus('paused','⏸ Đã dừng — '+Math.round(curPct)+'%');
+      updateBtn();
+    }
+    function resetPump() {
+      clearInterval(pumpTimer); pumpRunning=false; curPct=0; isFull=false;
+      setTankVisual(0); setDots(false);
+      document.getElementById('inf-lit').textContent='0.00 L';
+      document.getElementById('inf-money').textContent='0đ';
+      const sp=isSpecial();
+      setStatus(sp?'joke':'idle', sp?'Không cần xăng 😄':'Chờ bắt đầu');
+      updateBtn();
+    }
+
+    // ── INIT ────────────────────────────────────────────────────────
+    renderXe();
+    updateInfo();
+    loadFuelPrices(); // gọi API ngay khi load trang
+  </script>
+</body>
+</html>
