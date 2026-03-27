@@ -416,7 +416,8 @@
       pumpRunning=true; updateBtn();
       setStatus('running','Đang đổ xăng...'); setDots(true);
 
-      const duration=Math.min(Math.max(totalLit*200,2500),9000);
+      // thời gian đổ xăng tối tiếu 5s đến 30s
+      const duration=Math.min(Math.max(totalLit*200,5000),30000);
       const interval=60, totalSteps=duration/interval;
       const startPct=curPct;
       const remainSteps=Math.max(1, Math.round(totalSteps*(1-startPct/100)));
