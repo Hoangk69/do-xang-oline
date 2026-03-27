@@ -279,6 +279,8 @@
       const apiUrl = `https://giaxanghomnay.com/api/pvdate/${today}`;
 
       try {
+        // Thay bằng — thêm delay 1.5-2.5 giây trước khi fetch
+        await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000));
         const res = await fetch(apiUrl, { signal: AbortSignal.timeout(10000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
