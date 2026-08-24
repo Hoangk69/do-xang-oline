@@ -479,6 +479,7 @@
     <br /><span class="update-badge" id="footer-badge">⏱ Nguồn: API giaxanghomnay.com — Huy Hoàng Man</span>
   </div>
 
+  <script src="fuel-api.js"></script>
   <script>
     // ── XE DATA ───────────────────────────────────────────────────
     const xeData = [
@@ -504,14 +505,7 @@
       { group: 'Đặc biệt 😄',   name: 'Xe đạp', desc: 'Chạy bằng cơm, không cần xăng 😄', tank: null, icon: '🚲', special: true, joke: '🚴 Xe đạp chạy bằng cơm thôi bạn ơi!' },
     ];
 
-    // ── FUEL CONFIG ───────────────────────────────────────────────
-    // Các loại xăng muốn hiển thị — filter theo title từ API
-    // Lấy zone1_price (Vùng 1 — Hà Nội, TP.HCM)
-    const FUEL_CONFIG = [
-      { title: 'Xăng RON 95-III',  icon: '⛽' },
-      { title: 'Xăng E5 RON 92-II', icon: '🔥' },
-      { title: 'DO 0,05S-II',       icon: '🪣' },
-    ];
+    // Dùng khi API tạm thời không truy cập được.
     const FALLBACK_FUELS = [
       { name: 'Xăng RON 95-III',   price: 24330, icon: '⛽' },
       { name: 'Xăng E5 RON 92-II', price: 28070, icon: '🔥' },
@@ -525,25 +519,6 @@
     let targetMoney = 0; // 0 = đổ đầy bình
 
     // ── FETCH GIÁ XĂNG ───────────────────────────────────────────
-    function getTodayDate() {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    }
-
-    function parseFuelData(data, today) {
-      const allItems = [].concat(...data);
-      const result = [];
-      for (const cfg of FUEL_CONFIG) {
-        const matches = allItems.filter(item => item.title && item.title.trim() === cfg.title);
-        if (!matches.length) continue;
-        const best  = matches.find(item => item.date && item.date.startsWith(today)) || matches[0];
-        const price = best.zone1_price ?? best.price ?? null;
-        if (!price) continue;
-        result.push({ name: cfg.title, price: Math.round(price), icon: cfg.icon });
-      }
-      return result;
-    }
-
     async function loadFuelPrices() {
       const listEl   = document.getElementById('fuel-list');
       const tsEl     = document.getElementById('price-ts');
@@ -565,19 +540,12 @@
       // Delay giả lập
       await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000));
 
-      const today  = getTodayDate();
-      const apiUrl = `https://giaxanghomnay.com/api/pvdate/${today}`;
+      const today = FuelApi.getLocalDate();
 
       try {
-        const res = await fetch(apiUrl, { signal: AbortSignal.timeout(10000) });
+        const result = await FuelApi.fetchFuelPrices();
         clearInterval(loadAnim);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const data  = await res.json();
-        const items = parseFuelData(data, today);
-        if (!items.length) throw new Error('Không tìm thấy loại xăng trong response');
-
-        fuels = items;
+        fuels = result.fuels;
         const now = new Date().toLocaleString('vi-VN', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit', year:'numeric' });
         tsEl.textContent = `✅ Call API thành công — giaxanghomnay.com`;
         tsEl.className = 'price-ts ok';
